@@ -1,0 +1,73 @@
+{
+  "title": "ProspectMatcherUK Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "keywords": {
+      "title": "Search Keywords",
+      "type": "array",
+      "description": "Keywords to search for across platforms (e.g., 'AI automation', 'Supabase', 'consulting')",
+      "editor": "stringList",
+      "default": ["AI automation", "Supabase", "consulting"],
+      "minItems": 1
+    },
+    "includePlatforms": {
+      "title": "Platforms to Search",
+      "type": "array",
+      "description": "Which platforms to include in the search",
+      "editor": "select",
+      "items": {
+        "type": "string",
+        "enum": ["linkedin", "x", "youtube", "reddit", "medium", "web"]
+      },
+      "default": ["linkedin", "x", "youtube"],
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "countryFilter": {
+      "title": "Country Filter",
+      "type": "string",
+      "description": "Restrict results to this country",
+      "editor": "textfield",
+      "default": "United Kingdom"
+    },
+    "maxResults": {
+      "title": "Maximum Results",
+      "type": "integer",
+      "description": "Maximum number of profiles to return",
+      "default": 300,
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "minOverallScore": {
+      "title": "Minimum Overall Score",
+      "type": "integer",
+      "description": "Filter out profiles below this score (0-100). Note: investor_candidate and helper_expert profiles are always retained.",
+      "default": 50,
+      "minimum": 0,
+      "maximum": 100
+    },
+    "onlyNewProfiles": {
+      "title": "Only New Profiles",
+      "type": "boolean",
+      "description": "If true, update existing profiles instead of creating duplicates (based on platform + profile_url)",
+      "default": true
+    },
+    "supabaseUrl": {
+      "title": "Supabase URL",
+      "type": "string",
+      "description": "Your Supabase project URL (e.g., https://xxxxx.supabase.co). Leave empty to only save to Apify dataset.",
+      "editor": "textfield",
+      "nullable": true
+    },
+    "supabaseKey": {
+      "title": "Supabase API Key",
+      "type": "string",
+      "description": "Your Supabase service role key. Required if Supabase URL is provided.",
+      "editor": "textfield",
+      "isSecret": true,
+      "nullable": true
+    }
+  },
+  "required": ["keywords", "includePlatforms"]
+}

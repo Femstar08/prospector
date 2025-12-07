@@ -1,0 +1,12 @@
+{
+  "actorSpecification": 1,
+  "name": "prospect-matcher-uk",
+  "title": "ProspectMatcherUK - Multi-Platform Partner Discovery",
+  "description": "Discovers, classifies, and scores potential business partners across LinkedIn, X/Twitter, YouTube, Reddit, Medium, and web sources for UK-based entrepreneurs",
+  "version": "1.0.0",
+  "meta": {
+    "templateId": "js-crawlee"
+  },
+  "input": "./INPUT_SCHEMA.json",
+  "dockerfile": "./Dockerfile"
+}

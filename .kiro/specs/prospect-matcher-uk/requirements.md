@@ -1,0 +1,138 @@
+# Requirements Document
+
+## Introduction
+
+The ProspectMatcherUK system is an Apify Actor that discovers, classifies, and scores potential business partners and allies across multiple platforms for UK-based entrepreneurs. The system automatically tags profiles with role classifications, relationship potential, wealth indicators, and collaboration openness to enable strategic partnership decisions.
+
+## Glossary
+
+- **Actor**: An Apify automation script that performs web scraping and data processing tasks
+- **Profile**: A public user account on a social or professional platform
+- **Role Tag**: A classification label indicating the professional persona of a profile (e.g., founder, technical_builder)
+- **Relationship Tag**: A classification label indicating strategic partnership potential (e.g., collaborator_candidate, investor_candidate)
+- **Wealth Tier**: An estimated classification of financial capacity based on public signals
+- **Potential Tier**: An estimated classification of growth trajectory and activity level
+- **Openness Score**: A numerical measure (0-100) of a profile's receptiveness to collaboration
+- **Overall Score**: A weighted composite score combining multiple sub-scores to rank profiles
+- **ICP**: Ideal Customer Profile - the target audience characteristics
+- **NLP**: Natural Language Processing - computational analysis of text
+
+## Requirements
+
+### Requirement 1
+
+**User Story:** As an entrepreneur, I want to search for prospects across multiple platforms using keywords, so that I can discover potential partners beyond a single network.
+
+#### Acceptance Criteria
+
+1. WHEN the Actor receives a keywords array input THEN the system SHALL search for profiles matching those keywords across all enabled platforms
+2. WHEN the Actor receives an includePlatforms array THEN the system SHALL limit searches to only the specified platforms (linkedin, x, youtube, reddit, medium, web)
+3. WHEN the Actor receives a countryFilter input THEN the system SHALL restrict results to profiles from that country using location fields or text-based detection
+4. WHEN the Actor receives a maxResults input THEN the system SHALL limit the total number of profiles returned to that value
+5. THE Actor SHALL support searches on LinkedIn, X/Twitter, YouTube, Reddit, Medium, and general web sources
+
+### Requirement 2
+
+**User Story:** As an entrepreneur, I want profiles automatically tagged with role classifications, so that I can quickly identify founders, builders, marketers, and investors.
+
+#### Acceptance Criteria
+
+1. WHEN a profile contains job title or bio keywords "founder", "co-founder", "owner", "CEO", "managing director", "principal", "partner", or "entrepreneur" THEN the system SHALL assign the role tag "founder"
+2. WHEN a profile mentions "developer", "engineer", "data scientist", "ML", "AI engineer", "full-stack", "CTO", "built X", "open-source", or contains GitHub links THEN the system SHALL assign the role tag "technical_builder"
+3. WHEN a profile mentions "content creator", "YouTuber", "newsletter", "audience", "community", "personal brand", "influencer" or has follower counts exceeding a threshold THEN the system SHALL assign the role tag "marketer_with_audience"
+4. WHEN a profile mentions "consultant", "freelancer", "coach", "business owner", "side-hustler", "bootstrapped", "agency owner", or "SME" THEN the system SHALL assign the role tag "general_entrepreneur"
+5. WHEN a profile contains keywords "angel investor", "VC", "venture partner", "LP", "invests in", "backing founders", or "portfolio" THEN the system SHALL assign the role tag "investor"
+6. WHEN a profile contains keywords "COO", "operations", "delivery lead", "service manager", or "product operations" THEN the system SHALL assign the role tag "operator"
+7. WHEN a profile contains keywords "community lead", "community manager", "host of meetup", or mentions discord/Slack/FB group ownership THEN the system SHALL assign the role tag "community_builder"
+8. THE system SHALL allow profiles to receive multiple role tags simultaneously
+
+### Requirement 3
+
+**User Story:** As an entrepreneur, I want profiles tagged with relationship potential classifications, so that I can identify competitors, collaborators, mentors, and investment opportunities.
+
+#### Acceptance Criteria
+
+1. WHEN a profile has a very similar service mix and overlapping ICP to the user THEN the system SHALL assign the relationship tag "competitor_candidate"
+2. WHEN a profile has overlapping domain but complementary skills THEN the system SHALL assign the relationship tag "collaborator_candidate"
+3. WHEN a profile is senior or experienced and their content suggests mentoring, teaching, or sharing playbooks THEN the system SHALL assign the relationship tag "helper_expert"
+4. WHEN a profile uses partnership-oriented language such as "partner with", "collab", "joint venture", "co-create", or "open to partnerships" THEN the system SHALL assign the relationship tag "ally_candidate"
+5. WHEN a profile is tagged as investor and mentions "seed", "pre-seed", "angel", or investment focus areas matching user domains THEN the system SHALL assign the relationship tag "investor_candidate"
+6. WHEN a profile is a founder of an early-stage company or solo builder with relevant focus and fewer than 10 employees or "pre-seed/bootstrapped" status THEN the system SHALL assign the relationship tag "investee_candidate"
+7. WHEN a profile has a senior role, long experience, and publishes advice content THEN the system SHALL assign the relationship tag "mentor_candidate"
+8. WHEN a profile is junior or mid-level but highly active with ambitious language THEN the system SHALL assign the relationship tag "mentee_candidate"
+
+### Requirement 4
+
+**User Story:** As an entrepreneur, I want profiles classified by wealth tier and potential tier, so that I can prioritize high-value partnership opportunities.
+
+#### Acceptance Criteria
+
+1. WHEN a profile is an angel investor, VC, fund partner, founder of a funded company, has large exits, has 50+ staff, or is C-suite at a large firm THEN the system SHALL assign wealth_tier "high_net_worth"
+2. WHEN a profile is a director, senior partner, multi-location owner, works at a 10-50 staff startup, or has a personal brand with over 50k followers THEN the system SHALL assign wealth_tier "upper_mid"
+3. WHEN a profile is a solo founder, small agency owner, pre-seed stage, or side-hustler THEN the system SHALL assign wealth_tier "early_stage_or_emerging"
+4. WHEN a profile has insufficient information for wealth classification THEN the system SHALL assign wealth_tier "unknown"
+5. WHEN a profile posts consistently, builds products, discusses scaling or growth, or has strong overlap with user themes THEN the system SHALL assign potential_tier "high_potential"
+6. WHEN a profile has some activity in relevant domains but not frequent THEN the system SHALL assign potential_tier "medium_potential"
+7. WHEN a profile has sparse information, irrelevant topics, or no clear builder or entrepreneur signals THEN the system SHALL assign potential_tier "low_potential"
+
+### Requirement 5
+
+**User Story:** As an entrepreneur, I want profiles scored on openness to collaboration, so that I can focus outreach on receptive individuals.
+
+#### Acceptance Criteria
+
+1. WHEN a profile bio or pinned posts contain "open to collaboration", "let's connect", "DM me", "looking to partner", or "seeking co-founder" THEN the system SHALL assign openness_tag "open" and openness_score above 70
+2. WHEN a profile shows no explicit collaboration signal but is an active networker with podcasts, events, or existing collaborations THEN the system SHALL assign openness_tag "neutral" and openness_score between 40-70
+3. WHEN a profile explicitly states not being open or is a corporate employee with no outward-facing activity THEN the system SHALL assign openness_tag "closed" and openness_score below 40
+4. WHEN a profile has too little data to determine openness THEN the system SHALL assign openness_tag "unknown"
+5. THE system SHALL calculate openness_score as a numerical value from 0 to 100 based on text analysis
+
+### Requirement 6
+
+**User Story:** As an entrepreneur, I want profiles scored across multiple dimensions with a combined overall score, so that I can rank prospects by strategic fit.
+
+#### Acceptance Criteria
+
+1. THE system SHALL calculate business_alignment_score from 0 to 100 based on keyword overlap and service similarity
+2. THE system SHALL calculate technical_synergy_score from 0 to 100 based on complementary technical skills
+3. THE system SHALL calculate audience_score from 0 to 100 based on follower counts and content reach
+4. THE system SHALL calculate wealth_potential_score from 0 to 100 based on wealth_tier classification
+5. THE system SHALL calculate overall_score using weighted components: business_alignment_score (25%), technical_synergy_score (20%), audience_score (15%), wealth_potential_score (15%), openness_score (25%)
+6. WHEN the Actor receives a minOverallScore input THEN the system SHALL filter out profiles with overall_score below that threshold
+7. WHEN a profile is tagged as investor_candidate or helper_expert THEN the system SHALL retain the profile regardless of overall_score
+
+### Requirement 7
+
+**User Story:** As an entrepreneur, I want comprehensive profile data extracted from each platform, so that I have context for partnership decisions.
+
+#### Acceptance Criteria
+
+1. THE system SHALL extract name, profile URL, username or handle, location, headline or title, bio, company name, company size hints, and follower or subscriber counts for each profile
+2. THE system SHALL extract a recent content sample with date when available
+3. THE system SHALL detect and store topics such as AI, automation, Supabase, Firebase, app building, consulting, accounting, property, personal branding, content creation, coaching, and career support
+4. THE system SHALL store the data source run ID for traceability
+5. THE system SHALL record created_at and updated_at timestamps for each profile
+
+### Requirement 8
+
+**User Story:** As an entrepreneur, I want profiles deduplicated and stored in Supabase, so that I have a clean dataset for my UI.
+
+#### Acceptance Criteria
+
+1. THE system SHALL deduplicate profiles by platform and profile_url before saving
+2. WHEN onlyNewProfiles input is true THEN the system SHALL update existing records instead of creating duplicates matched on platform and profile_url
+3. THE system SHALL save all profile data to an Apify dataset
+4. THE system SHALL save all profile data to a Supabase table named prospect_profiles
+5. THE system SHALL maintain idempotency when updating existing profiles
+
+### Requirement 9
+
+**User Story:** As an entrepreneur, I want the Actor to use NLP for topic extraction, so that profiles are accurately categorized by domain expertise.
+
+#### Acceptance Criteria
+
+1. THE system SHALL use natural language processing to analyze profile bios and content samples
+2. THE system SHALL extract topics from a predefined list of relevant domains
+3. THE system SHALL store detected topics in a topics_detected array field
+4. THE system SHALL use topic detection to inform business_alignment_score calculation
+5. THE system SHALL handle text in English language for NLP processing
