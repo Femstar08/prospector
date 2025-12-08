@@ -96,8 +96,20 @@ class Scorer {
 
   /**
    * Calculate overall score using weighted formula (0-100)
-   * Weights: business_alignment (25%), technical_synergy (20%), 
-   *          audience (15%), wealth_potential (15%), openness (25%)
+   * 
+   * Updated weights with question-seeking metrics:
+   * - business_alignment: 20% (was 25%)
+   * - technical_synergy: 15% (was 20%)
+   * - audience: 10% (was 15%)
+   * - wealth_potential: 10% (was 15%)
+   * - openness: 20% (was 25%)
+   * - question_quality: 10% (new)
+   * - intent: 15% (new)
+   * - decision_stage: 10% (new)
+   * 
+   * Boosts:
+   * - High intent (intent_score > 80): +10 points
+   * - Actively seeking professional (decision_stage_score = 100): +15 points
    */
   calculateOverallScore(subScores) {
     const {
@@ -105,15 +117,33 @@ class Scorer {
       technical_synergy_score = 0,
       audience_score = 0,
       wealth_potential_score = 0,
-      openness_score = 0
+      openness_score = 0,
+      question_quality_score = 0,
+      intent_score = 0,
+      decision_stage_score = 0
     } = subScores;
     
-    const score = 
-      (business_alignment_score * 0.25) +
-      (technical_synergy_score * 0.20) +
-      (audience_score * 0.15) +
-      (wealth_potential_score * 0.15) +
-      (openness_score * 0.25);
+    // Base score with updated weights
+    let score = 
+      (business_alignment_score * 0.20) +
+      (technical_synergy_score * 0.15) +
+      (audience_score * 0.10) +
+      (wealth_potential_score * 0.10) +
+      (openness_score * 0.20) +
+      (question_quality_score * 0.10) +
+      (intent_score * 0.15) +
+      (decision_stage_score * 0.10);
+    
+    // Apply boosts for high-intent prospects
+    if (intent_score > 80) {
+      score += 10;
+      console.log(`[Scorer] High intent boost applied (+10)`);
+    }
+    
+    if (decision_stage_score === 100) {
+      score += 15;
+      console.log(`[Scorer] Actively seeking professional boost applied (+15)`);
+    }
     
     return Math.min(Math.max(Math.round(score), 0), 100);
   }
@@ -128,12 +158,21 @@ class Scorer {
     const wealth_potential_score = this.calculateWealthPotentialScore(profile.wealth_tier);
     const openness_score = profile.openness_score || 50;
     
+    // Question-seeking scores (default to 0 if not present)
+    const question_quality_score = profile.question_quality_score || 0;
+    const intent_score = profile.intent_score || 0;
+    const decision_stage_score = profile.decision_stage_score || 0;
+    const help_seeking_score = profile.help_seeking_score || 0;
+    
     const overall_score = this.calculateOverallScore({
       business_alignment_score,
       technical_synergy_score,
       audience_score,
       wealth_potential_score,
-      openness_score
+      openness_score,
+      question_quality_score,
+      intent_score,
+      decision_stage_score
     });
     
     return {
@@ -142,6 +181,10 @@ class Scorer {
       audience_score,
       wealth_potential_score,
       openness_score,
+      question_quality_score,
+      intent_score,
+      decision_stage_score,
+      help_seeking_score,
       overall_score
     };
   }

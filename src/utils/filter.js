@@ -4,7 +4,7 @@
 class Filter {
   /**
    * Filter profiles by minimum overall score
-   * Exception: investor_candidate and helper_expert are always retained
+   * Exceptions: investor_candidate, helper_expert, and question_asker are always retained
    */
   filterByScore(profiles, minOverallScore) {
     return profiles.filter(profile => {
@@ -13,6 +13,11 @@ class Filter {
       // Exception: always keep investors and helpers
       if (relationshipTags.includes('investor_candidate') || 
           relationshipTags.includes('helper_expert')) {
+        return true;
+      }
+      
+      // Exception: always keep question askers (people with questions)
+      if (profile.question_text && profile.intent_score > 0) {
         return true;
       }
       
