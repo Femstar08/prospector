@@ -269,3 +269,211 @@
 - [x] 24. Final checkpoint - Ensure all tests pass
 
   - Ensure all tests pass, ask the user if questions arise.
+
+## Phase 2: Question-Seeking Enhancement
+
+- [ ] 25. Implement question detection utility
+
+  - Create src/utils/question-detector.js
+  - Implement isQuestion() with regex patterns for question indicators
+  - Implement extractQuestionType() to classify question types (how-to, recommendation, advice, help)
+  - Implement detectUrgency() to find urgency indicators (urgent, ASAP, soon, quickly)
+  - Implement detectBudget() to find budget mentions (£, budget, afford, willing to pay)
+  - Implement detectTimeline() to find timeline mentions (this month, by Q1, before tax year)
+  - Implement detectProfessionalSeeking() to find hiring intent (hire, looking for, need a, recommend a)
+  - _Requirements: 10.5, 11.2, 11.3, 11.4, 11.5, 11.6_
+
+- [ ]\* 25.1 Write property test for question detection patterns
+
+  - **Property 19: Question detection patterns**
+  - **Validates: Requirements 10.5**
+
+- [ ]\* 25.2 Write property test for urgency detection
+
+  - **Property 20: Urgency detection**
+  - **Validates: Requirements 11.2**
+
+- [ ] 26. Implement intent scoring engine
+
+  - Create src/scoring/intent-scorer.js
+  - Implement calculateQuestionQualityScore() based on specificity and detail
+  - Implement calculateIntentScore() with urgency, budget, timeline, and professional-seeking factors
+  - Implement calculateDecisionStageScore() to classify research/comparison/ready/seeking stages
+  - Implement calculateHelpSeekingScore() based on question frequency and engagement
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8_
+
+- [ ]\* 26.1 Write property test for intent score calculation
+
+  - **Property 21: Intent score calculation**
+  - **Validates: Requirements 11.2, 11.3, 11.4, 11.5, 11.6**
+
+- [ ]\* 26.2 Write property test for decision stage classification
+
+  - **Property 22: Decision stage classification**
+  - **Validates: Requirements 11.7**
+
+- [ ] 27. Enhance Twitter/X adapter with question search
+
+  - Update src/adapters/x-adapter.js search() method
+  - Implement buildQuestionQuery() to construct question-focused search queries
+  - Add question pattern keywords: "how do I", "how to", "need help with", "can anyone recommend", "advice on", "looking for", "should I"
+  - Filter tweets for question marks and question patterns
+  - Extract question text and store in profile metadata
+  - _Requirements: 10.1, 10.5_
+
+- [ ]\* 27.1 Write property test for Twitter question query building
+
+  - **Property 23: Twitter question query building**
+  - **Validates: Requirements 10.1**
+
+- [ ] 28. Enhance Reddit adapter with subreddit targeting
+
+  - Update src/adapters/reddit-adapter.js search() method
+  - Add UK-focused subreddit list: r/UKPersonalFinance, r/UKProperty, r/UKInvesting, r/Accounting, r/SmallBusiness, r/Entrepreneur, r/LegalAdviceUK, r/AskUK, r/HousingUK
+  - Implement searchSubreddit() to query individual subreddits
+  - Filter for posts with question flairs or question marks in titles
+  - Prioritize posts with low comment counts (unanswered questions)
+  - Extract post title, body, author, subreddit, score, comment count, creation date
+  - Implement rate limiting (60 requests per minute)
+  - _Requirements: 10.2, 10.3, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
+
+- [ ]\* 28.1 Write property test for Reddit subreddit targeting
+
+  - **Property 24: Reddit subreddit targeting**
+  - **Validates: Requirements 10.2, 12.2**
+
+- [ ]\* 28.2 Write property test for Reddit question detection
+
+  - **Property 25: Reddit question detection**
+  - **Validates: Requirements 10.3, 12.4**
+
+- [ ] 29. Implement YouTube comment analysis
+
+  - Update src/adapters/youtube-adapter.js with comment extraction
+  - Implement findRelevantChannels() to identify UK finance/property channels
+  - Implement extractComments() using YouTube Data API v3 commentThreads endpoint
+  - Filter comments for question patterns
+  - Extract commenter channel profiles
+  - Implement getCommenterProfile() to fetch channel details
+  - Track commenters who ask multiple questions
+  - Respect YouTube API quota limits
+  - _Requirements: 10.4, 10.5, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
+
+- [ ]\* 29.1 Write property test for YouTube comment question detection
+
+  - **Property 26: YouTube comment question detection**
+  - **Validates: Requirements 10.4, 13.3**
+
+- [ ] 30. Implement Quora adapter
+
+  - Create src/adapters/quora-adapter.js extending BasePlatformAdapter
+  - Implement search() for Quora topics: "Property Investment UK", "UK Personal Finance", "Accounting and Bookkeeping", "Small Business Finance UK"
+  - Implement web scraping for Quora question pages
+  - Extract question askers (not answerers)
+  - Filter for UK-specific content using location and topic tags
+  - Prioritize recent questions
+  - Respect robots.txt and rate limiting
+  - _Requirements: 10.6, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7_
+
+- [ ]\* 30.1 Write property test for Quora question asker extraction
+
+  - **Property 27: Quora question asker extraction**
+  - **Validates: Requirements 14.3**
+
+- [ ] 31. Add Facebook Groups adapter (optional)
+
+  - Create src/adapters/facebook-adapter.js extending BasePlatformAdapter
+  - Implement search() for UK property investment and finance groups
+  - Extract question posts from public groups
+  - Filter for question patterns
+  - Handle Facebook API authentication and permissions
+  - _Requirements: 10.7_
+
+- [ ] 32. Update scoring system with question metrics
+
+  - Update src/scoring/scorer.js calculateOverallScore() method
+  - Add question_quality_score (10% weight)
+  - Add intent_score (15% weight)
+  - Add decision_stage_score (10% weight)
+  - Adjust existing weights: business_alignment_score (20%), technical_synergy_score (15%), audience_score (10%), wealth_potential_score (10%), openness_score (20%)
+  - Implement score boost for high intent (intent_score > 80: +10 points)
+  - Implement score boost for actively seeking professional (decision_stage_score = 100: +15 points)
+  - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
+
+- [ ]\* 32.1 Write property test for updated overall score calculation
+
+  - **Property 28: Updated overall score calculation**
+  - **Validates: Requirements 15.1, 15.2**
+
+- [ ]\* 32.2 Write property test for intent score boost
+
+  - **Property 29: Intent score boost**
+  - **Validates: Requirements 15.3, 15.4**
+
+- [ ] 33. Update filtering logic for question askers
+
+  - Update src/utils/filter.js filterByScore() method
+  - Add question_asker to retention rule alongside investor_candidate and helper_expert
+  - Ensure question_asker profiles are retained regardless of overall_score
+  - _Requirements: 15.6, 15.7_
+
+- [ ]\* 33.1 Write property test for question asker retention
+
+  - **Property 30: Question asker retention**
+  - **Validates: Requirements 15.7**
+
+- [ ] 34. Update input schema for question-seeking mode
+
+  - Update .actor/INPUT_SCHEMA.json
+  - Add questionSeekingMode boolean field (default: true)
+  - Add targetSubreddits array field for custom Reddit subreddit list
+  - Add includeComments boolean field for YouTube comment analysis
+  - Add includeQuora boolean field for Quora integration
+  - _Requirements: 10.1, 10.2, 10.4, 10.6_
+
+- [ ] 35. Update storage schema for question metadata
+
+  - Update scripts/setup-supabase.sql
+  - Add question_text text field
+  - Add question_quality_score integer field
+  - Add intent_score integer field
+  - Add decision_stage_score integer field
+  - Add help_seeking_score integer field
+  - Add question_source text field (tweet, reddit_post, youtube_comment, quora_question)
+  - Add question_date timestamp field
+  - Add indexes for new score fields
+  - _Requirements: 11.1, 11.7, 11.8_
+
+- [ ] 36. Update documentation for question-seeking features
+
+  - Update README.md with question-seeking strategy explanation
+  - Document new input parameters
+  - Add examples of question-seeking searches
+  - Document new output fields
+  - Add troubleshooting guide for Reddit/Quora/YouTube comment access
+  - _Requirements: All Phase 2_
+
+- [ ] 37. Checkpoint - Test question-seeking features
+
+  - Test Twitter question search with sample queries
+  - Test Reddit integration with r/UKPersonalFinance
+  - Test YouTube comment extraction
+  - Test Quora integration
+  - Test intent scoring with sample questions
+  - Verify question asker retention in filtering
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ]\* 38. Write integration tests for question-seeking workflow
+
+  - Test end-to-end question detection and scoring
+  - Test multi-platform question search
+  - Test intent score calculation with real examples
+  - Test question asker profile retention
+  - _Requirements: All Phase 2_
+
+- [ ] 39. Final checkpoint - Phase 2 complete
+
+  - Ensure all Phase 2 tests pass
+  - Verify question-seeking features work across all platforms
+  - Confirm high-intent prospects are properly prioritized
+  - Ask the user if questions arise.

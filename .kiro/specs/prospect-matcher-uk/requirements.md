@@ -136,3 +136,88 @@ The ProspectMatcherUK system is an Apify Actor that discovers, classifies, and s
 3. THE system SHALL store detected topics in a topics_detected array field
 4. THE system SHALL use topic detection to inform business_alignment_score calculation
 5. THE system SHALL handle text in English language for NLP processing
+
+### Requirement 10
+
+**User Story:** As an entrepreneur, I want to find people actively asking questions about property, finance, accounting, and budgeting, so that I can identify high-intent prospects seeking professional help.
+
+#### Acceptance Criteria
+
+1. WHEN searching Twitter/X THEN the system SHALL prioritize tweets containing question patterns such as "how do I", "how to", "need help with", "can anyone recommend", "advice on", "looking for", "should I"
+2. WHEN searching Reddit THEN the system SHALL target UK-focused subreddits including r/UKPersonalFinance, r/UKProperty, r/UKInvesting, r/Accounting, r/SmallBusiness, r/Entrepreneur, r/LegalAdviceUK, r/AskUK, r/HousingUK
+3. WHEN searching Reddit THEN the system SHALL prioritize posts with question flairs or question marks in titles
+4. WHEN searching YouTube THEN the system SHALL analyze comments on finance and property videos for questions and extract commenter profiles
+5. WHEN analyzing content THEN the system SHALL detect question indicators including question marks, question words (how, what, where, when, why, should, can, could, would), and help-seeking phrases (need help, looking for, can anyone, advice on, recommend, suggestion, tips, guidance)
+6. THE system SHALL support searching Quora for UK-specific finance and property questions
+7. THE system SHALL support searching Facebook Groups for UK property investment and finance questions where API access permits
+
+### Requirement 11
+
+**User Story:** As an entrepreneur, I want prospects scored by question quality and intent, so that I can prioritize people ready to engage professional services.
+
+#### Acceptance Criteria
+
+1. THE system SHALL calculate question_quality_score from 0 to 100 based on question specificity, detail length, and clarity
+2. WHEN content contains urgency indicators such as "urgent", "ASAP", "soon", "quickly", "this week", "this month" THEN the system SHALL increase intent_score by 20 points
+3. WHEN content mentions budget amounts, "budget", "afford", "willing to pay", or "looking to spend" THEN the system SHALL increase intent_score by 15 points
+4. WHEN content mentions specific timelines such as "by next month", "in Q1", "before tax year" THEN the system SHALL increase intent_score by 15 points
+5. WHEN content contains professional-seeking language such as "hire", "looking for", "need a", "recommend a", "find an accountant", "find a financial advisor" THEN the system SHALL increase intent_score by 25 points
+6. WHEN content is longer than 100 characters and contains a question mark THEN the system SHALL increase intent_score by 15 points
+7. THE system SHALL calculate decision_stage_score with values: research phase (30), comparison phase (60), ready to act (90), actively seeking professional (100)
+8. THE system SHALL calculate help_seeking_score from 0 to 100 based on frequency of asking questions, engagement with answers, follow-up questions, and mentions of failed attempts
+
+### Requirement 12
+
+**User Story:** As an entrepreneur, I want enhanced Reddit integration, so that I can discover prospects in UK finance and property communities.
+
+#### Acceptance Criteria
+
+1. THE system SHALL search Reddit using the public Reddit API without requiring authentication for public data
+2. WHEN searching Reddit THEN the system SHALL query multiple UK-focused subreddits in parallel
+3. WHEN extracting Reddit posts THEN the system SHALL capture post title, post body, author username, subreddit, post score, comment count, and post creation date
+4. WHEN a Reddit post contains question patterns THEN the system SHALL extract the author's profile information
+5. THE system SHALL prioritize Reddit posts with low comment counts indicating unanswered questions
+6. THE system SHALL extract Reddit user profiles including username, karma score, account age, and recent post history when available
+7. THE system SHALL rate-limit Reddit API requests to comply with Reddit's public API guidelines (maximum 60 requests per minute)
+
+### Requirement 13
+
+**User Story:** As an entrepreneur, I want YouTube comment analysis, so that I can find people asking questions on finance and property videos.
+
+#### Acceptance Criteria
+
+1. WHEN searching YouTube THEN the system SHALL identify popular UK finance, property investment, accounting, and budgeting channels
+2. THE system SHALL extract comments from relevant videos using YouTube Data API v3
+3. WHEN analyzing comments THEN the system SHALL detect question patterns and help-seeking language
+4. WHEN a comment contains a question THEN the system SHALL extract the commenter's channel profile
+5. THE system SHALL prioritize commenters who ask multiple questions across different videos
+6. THE system SHALL respect YouTube API quota limits and implement appropriate rate limiting
+7. THE system SHALL extract comment text, commenter name, commenter channel ID, comment likes, and comment date
+
+### Requirement 14
+
+**User Story:** As an entrepreneur, I want Quora integration, so that I can find people asking UK-specific finance and property questions.
+
+#### Acceptance Criteria
+
+1. THE system SHALL search Quora topics including "Property Investment UK", "UK Personal Finance", "Accounting and Bookkeeping", "Small Business Finance UK"
+2. WHEN searching Quora THEN the system SHALL prioritize recent questions over older questions
+3. THE system SHALL extract question askers (not answerers) as primary prospects
+4. WHEN extracting Quora profiles THEN the system SHALL capture username, profile URL, question text, question date, and topic tags
+5. THE system SHALL filter Quora results for UK-specific content using location indicators and topic tags
+6. THE system SHALL implement web scraping for Quora if no official API access is available
+7. THE system SHALL respect Quora's robots.txt and rate limiting guidelines
+
+### Requirement 15
+
+**User Story:** As an entrepreneur, I want enhanced overall scoring that incorporates question quality and intent, so that high-intent prospects are prioritized.
+
+#### Acceptance Criteria
+
+1. THE system SHALL update overall_score calculation to include question_quality_score (10%), intent_score (15%), and decision_stage_score (10%)
+2. THE system SHALL adjust existing score weights: business_alignment_score (20%), technical_synergy_score (15%), audience_score (10%), wealth_potential_score (10%), openness_score (20%)
+3. WHEN a profile has intent_score above 80 THEN the system SHALL boost overall_score by 10 points
+4. WHEN a profile has decision_stage_score of 100 (actively seeking professional) THEN the system SHALL boost overall_score by 15 points
+5. WHEN a profile asks questions but has low engagement THEN the system SHALL not penalize overall_score
+6. THE system SHALL maintain the rule that investor_candidate and helper_expert profiles are retained regardless of overall_score
+7. THE system SHALL add question_asker profiles to the retention rule alongside investor_candidate and helper_expert

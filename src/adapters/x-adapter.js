@@ -1,4 +1,5 @@
 const BasePlatformAdapter = require('./base-adapter');
+const IntentScorer = require('../scoring/intent-scorer');
 
 /**
  * X/Twitter platform adapter
@@ -8,6 +9,32 @@ class XAdapter extends BasePlatformAdapter {
     super(config);
     this.platformName = 'x';
     this.bearerToken = config.twitterBearerToken || process.env.TWITTER_BEARER_TOKEN;
+    this.questionSeekingMode = config.questionSeekingMode !== false; // Default true
+    this.intentScorer = new IntentScorer();
+  }
+
+  /**
+   * Build question-focused search query
+   * @param {string[]} keywords - Base keywords
+   * @returns {string} - Enhanced query with question patterns
+   */
+  buildQuestionQuery(keywords) {
+    const questionPatterns = [
+      '"how do I"',
+      '"how to"',
+      '"need help with"',
+      '"can anyone recommend"',
+      '"advice on"',
+      '"looking for"',
+      '"should I"',
+      '"what\'s the best way to"'
+    ];
+    
+    // Combine keywords with question patterns
+    const keywordQuery = keywords.join(' OR ');
+    const questionQuery = questionPatterns.slice(0, 3).join(' OR '); // Use top 3 to stay within query limits
+    
+    return `(${questionQuery}) (${keywordQuery})`;
   }
 
   /**
@@ -22,9 +49,14 @@ class XAdapter extends BasePlatformAdapter {
    */
   async search(keywords, countryFilter, maxResults) {
     const profiles = [];
-    const searchQuery = keywords.join(' OR ');
+    
+    // Build query based on mode
+    const searchQuery = this.questionSeekingMode 
+      ? this.buildQuestionQuery(keywords)
+      : keywords.join(' OR ');
     
     console.log(`[X] Searching for: ${searchQuery} in ${countryFilter}`);
+    console.log(`[X] Question-seeking mode: ${this.questionSeekingMode ? 'enabled' : 'disabled'}`);
     console.log(`[X] Bearer token status: ${this.bearerToken ? 'configured' : 'not configured'}`);
     
     if (!this.bearerToken) {
@@ -34,11 +66,10 @@ class XAdapter extends BasePlatformAdapter {
     
     try {
       // Twitter API v2: Search recent tweets, then extract unique users
-      // Note: There's no direct "user search" in v2 API, so we search tweets and extract users
       const searchUrl = new URL('https://api.twitter.com/2/tweets/search/recent');
-      searchUrl.searchParams.set('query', `${searchQuery} -is:retweet`);
-      searchUrl.searchParams.set('max_results', Math.min(maxResults * 2, 100)); // Get more tweets to find unique users
-      searchUrl.searchParams.set('tweet.fields', 'author_id,created_at,public_metrics');
+      searchUrl.searchParams.set('query', `${searchQuery} ? -is:retweet`); // Add ? to find questions
+      searchUrl.searchParams.set('max_results', Math.min(maxResults * 2, 100));
+      searchUrl.searchParams.set('tweet.fields', 'author_id,created_at,public_metrics,text');
       searchUrl.searchParams.set('expansions', 'author_id');
       searchUrl.searchParams.set('user.fields', 'id,name,username,description,location,public_metrics,profile_image_url,verified');
       
@@ -56,10 +87,22 @@ class XAdapter extends BasePlatformAdapter {
       }
       
       const data = await response.json();
+      console.log(`[X] Found ${data.data?.length || 0} tweets`);
       console.log(`[X] Found ${data.includes?.users?.length || 0} unique users from tweets`);
       
       if (!data.includes?.users || data.includes.users.length === 0) {
         return profiles;
+      }
+      
+      // Create a map of tweets by author for question extraction
+      const tweetsByAuthor = new Map();
+      if (data.data) {
+        for (const tweet of data.data) {
+          if (!tweetsByAuthor.has(tweet.author_id)) {
+            tweetsByAuthor.set(tweet.author_id, []);
+          }
+          tweetsByAuthor.get(tweet.author_id).push(tweet);
+        }
       }
       
       // Filter by country if specified
@@ -72,13 +115,20 @@ class XAdapter extends BasePlatformAdapter {
         console.log(`[X] After country filter: ${users.length} users`);
       }
       
-      // Transform to our profile format
+      // Transform to our profile format with question analysis
       for (const user of users.slice(0, maxResults)) {
-        const profile = this.transformUserToProfile(user);
+        const userTweets = tweetsByAuthor.get(user.id) || [];
+        const profile = this.transformUserToProfile(user, userTweets);
         profiles.push(profile);
       }
       
       console.log(`[X] Successfully extracted ${profiles.length} user profiles`);
+      
+      // Log question stats if in question-seeking mode
+      if (this.questionSeekingMode) {
+        const questionsFound = profiles.filter(p => p.question_text).length;
+        console.log(`[X] Found ${questionsFound} profiles with questions`);
+      }
       
     } catch (error) {
       console.error(`[X] Error searching:`, error.message);
@@ -89,8 +139,10 @@ class XAdapter extends BasePlatformAdapter {
 
   /**
    * Transform Twitter user data to our profile format
+   * @param {object} user - Twitter user object
+   * @param {array} tweets - User's tweets (optional, for question extraction)
    */
-  transformUserToProfile(user) {
+  transformUserToProfile(user, tweets = []) {
     const profile = this.createEmptyProfile();
     
     profile.profile_url = `https://twitter.com/${user.username}`;
@@ -103,6 +155,40 @@ class XAdapter extends BasePlatformAdapter {
     profile.post_count = user.public_metrics?.tweet_count || 0;
     profile.profile_image_url = user.profile_image_url || '';
     profile.verified = user.verified || false;
+    
+    // Extract question from tweets if in question-seeking mode
+    if (this.questionSeekingMode && tweets.length > 0) {
+      // Find the best question tweet
+      let bestQuestion = null;
+      let bestScore = 0;
+      
+      for (const tweet of tweets) {
+        const intentAnalysis = this.intentScorer.scoreContent(tweet.text);
+        
+        if (intentAnalysis.is_question && intentAnalysis.intent_score > bestScore) {
+          bestQuestion = tweet;
+          bestScore = intentAnalysis.intent_score;
+        }
+      }
+      
+      if (bestQuestion) {
+        const intentAnalysis = this.intentScorer.scoreContent(bestQuestion.text);
+        
+        profile.question_text = bestQuestion.text;
+        profile.question_source = 'twitter';
+        profile.question_date = bestQuestion.created_at;
+        profile.question_quality_score = intentAnalysis.question_quality_score;
+        profile.intent_score = intentAnalysis.intent_score;
+        profile.decision_stage_score = intentAnalysis.decision_stage_score;
+        profile.decision_stage = intentAnalysis.decision_stage;
+        profile.help_seeking_score = intentAnalysis.help_seeking_score;
+        profile.question_type = intentAnalysis.question_type;
+        
+        // Store the tweet as last content sample
+        profile.last_content_sample = bestQuestion.text;
+        profile.last_content_date = bestQuestion.created_at;
+      }
+    }
     
     return profile;
   }
