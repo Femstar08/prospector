@@ -45,6 +45,29 @@ class XAdapter extends BasePlatformAdapter {
   }
 
   /**
+   * Retry with exponential backoff
+   * @param {Function} fn - Function to retry
+   * @param {number} maxRetries - Maximum number of retries
+   * @returns {Promise} - Result of function
+   */
+  async retryWithBackoff(fn, maxRetries = 3) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        // Check if it's a rate limit error (429)
+        if (error.message.includes('429') && attempt < maxRetries - 1) {
+          const waitTime = Math.pow(2, attempt) * 60000; // 1min, 2min, 4min
+          console.log(`[X] Rate limited. Waiting ${waitTime / 1000} seconds before retry ${attempt + 1}/${maxRetries}...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+
+  /**
    * Search for X/Twitter profiles
    */
   async search(keywords, countryFilter, maxResults) {
@@ -65,28 +88,32 @@ class XAdapter extends BasePlatformAdapter {
     }
     
     try {
-      // Twitter API v2: Search recent tweets, then extract unique users
-      const searchUrl = new URL('https://api.twitter.com/2/tweets/search/recent');
-      searchUrl.searchParams.set('query', `${searchQuery} ? -is:retweet`); // Add ? to find questions
-      searchUrl.searchParams.set('max_results', Math.min(maxResults * 2, 100));
-      searchUrl.searchParams.set('tweet.fields', 'author_id,created_at,public_metrics,text');
-      searchUrl.searchParams.set('expansions', 'author_id');
-      searchUrl.searchParams.set('user.fields', 'id,name,username,description,location,public_metrics,profile_image_url,verified');
-      
-      console.log(`[X] Calling Twitter API v2...`);
-      const response = await fetch(searchUrl.toString(), {
-        headers: {
-          'Authorization': `Bearer ${this.bearerToken}`,
-          'User-Agent': 'ProspectMatcherUK/1.0'
+      // Wrap API call in retry logic
+      const data = await this.retryWithBackoff(async () => {
+        // Twitter API v2: Search recent tweets, then extract unique users
+        const searchUrl = new URL('https://api.twitter.com/2/tweets/search/recent');
+        searchUrl.searchParams.set('query', `${searchQuery} ? -is:retweet`); // Add ? to find questions
+        searchUrl.searchParams.set('max_results', Math.min(maxResults * 2, 100));
+        searchUrl.searchParams.set('tweet.fields', 'author_id,created_at,public_metrics,text');
+        searchUrl.searchParams.set('expansions', 'author_id');
+        searchUrl.searchParams.set('user.fields', 'id,name,username,description,location,public_metrics,profile_image_url,verified');
+        
+        console.log(`[X] Calling Twitter API v2...`);
+        const response = await fetch(searchUrl.toString(), {
+          headers: {
+            'Authorization': `Bearer ${this.bearerToken}`,
+            'User-Agent': 'ProspectMatcherUK/1.0'
+          }
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Twitter API error: ${response.status} - ${errorText}`);
         }
+        
+        return await response.json();
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Twitter API error: ${response.status} - ${errorText}`);
-      }
-      
-      const data = await response.json();
       console.log(`[X] Found ${data.data?.length || 0} tweets`);
       console.log(`[X] Found ${data.includes?.users?.length || 0} unique users from tweets`);
       
