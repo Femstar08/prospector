@@ -26,18 +26,19 @@ class YouTubeAdapter extends BasePlatformAdapter {
     const searchQuery = keywords.join(' ');
     
     console.log(`[YouTube] Searching for: ${searchQuery} in ${countryFilter}`);
+    console.log(`[YouTube] API key status: ${this.apiKey ? 'configured' : 'not configured'}`);
     
     if (!this.apiKey) {
-      console.log(`[YouTube] Note: YouTube API key not configured`);
+      console.log(`[YouTube] Note: YouTube API key not configured - skipping search`);
       return profiles;
     }
     
     try {
+      console.log(`[YouTube] API key found, but search implementation is not yet complete`);
+      console.log(`[YouTube] TODO: Implement YouTube Data API v3 search`);
       // YouTube Data API v3 search endpoint
       // GET https://www.googleapis.com/youtube/v3/search
       // Parameters: q, type=channel, regionCode, maxResults
-      
-      console.log(`[YouTube] Note: Full implementation requires YouTube Data API v3 key`);
       
     } catch (error) {
       console.error(`[YouTube] Error searching:`, error.message);

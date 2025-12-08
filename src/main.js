@@ -43,6 +43,14 @@ Actor.main(async () => {
     onlyNewProfiles
   });
 
+  // Debug: Check if API keys are provided (without logging the actual keys)
+  console.log('API credentials status:', {
+    twitterBearerToken: twitterBearerToken ? '✓ provided' : '✗ missing',
+    youtubeApiKey: youtubeApiKey ? '✓ provided' : '✗ missing',
+    googleSearchApiKey: googleSearchApiKey ? '✓ provided' : '✗ missing',
+    googleSearchEngineId: googleSearchEngineId ? '✓ provided' : '✗ missing'
+  });
+
   // Initialize components
   const adapterFactory = new AdapterFactory({
     twitterBearerToken,

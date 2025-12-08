@@ -25,18 +25,19 @@ class XAdapter extends BasePlatformAdapter {
     const searchQuery = keywords.join(' OR ');
     
     console.log(`[X] Searching for: ${searchQuery} in ${countryFilter}`);
+    console.log(`[X] Bearer token status: ${this.bearerToken ? 'configured' : 'not configured'}`);
     
     if (!this.bearerToken) {
-      console.log(`[X] Note: Twitter API bearer token not configured`);
+      console.log(`[X] Note: Twitter API bearer token not configured - skipping search`);
       return profiles;
     }
     
     try {
+      console.log(`[X] Bearer token found, but search implementation is not yet complete`);
+      console.log(`[X] TODO: Implement Twitter API v2 user search`);
       // Twitter API v2 user search endpoint
       // Note: This requires Twitter API v2 access
       // Implementation would use Twitter API client
-      
-      console.log(`[X] Note: Full implementation requires Twitter API v2 credentials`);
       
     } catch (error) {
       console.error(`[X] Error searching:`, error.message);
