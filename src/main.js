@@ -27,7 +27,11 @@ Actor.main(async () => {
     minOverallScore = 50,
     onlyNewProfiles = true,
     supabaseUrl,
-    supabaseKey
+    supabaseKey,
+    twitterBearerToken,
+    youtubeApiKey,
+    googleSearchApiKey,
+    googleSearchEngineId
   } = input;
 
   console.log('Input configuration:', {
@@ -40,7 +44,12 @@ Actor.main(async () => {
   });
 
   // Initialize components
-  const adapterFactory = new AdapterFactory();
+  const adapterFactory = new AdapterFactory({
+    twitterBearerToken,
+    youtubeApiKey,
+    googleSearchApiKey,
+    googleSearchEngineId
+  });
   const classifier = new Classifier();
   const relationshipClassifier = new RelationshipClassifier();
   const wealthClassifier = new WealthClassifier();

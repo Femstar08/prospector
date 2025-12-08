@@ -7,8 +7,8 @@ class WebAdapter extends BasePlatformAdapter {
   constructor(config = {}) {
     super(config);
     this.platformName = 'web';
-    this.searchApiKey = config.searchApiKey || process.env.SEARCH_API_KEY;
-    this.searchEngineId = config.searchEngineId || process.env.SEARCH_ENGINE_ID;
+    this.searchApiKey = config.googleSearchApiKey || process.env.SEARCH_API_KEY;
+    this.searchEngineId = config.googleSearchEngineId || process.env.SEARCH_ENGINE_ID;
   }
 
   /**

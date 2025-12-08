@@ -67,6 +67,38 @@
       "editor": "textfield",
       "isSecret": true,
       "nullable": true
+    },
+    "twitterBearerToken": {
+      "title": "Twitter/X Bearer Token",
+      "type": "string",
+      "description": "Twitter API v2 Bearer Token for X/Twitter search. Get from https://developer.twitter.com/",
+      "editor": "textfield",
+      "isSecret": true,
+      "nullable": true
+    },
+    "youtubeApiKey": {
+      "title": "YouTube API Key",
+      "type": "string",
+      "description": "YouTube Data API v3 key. Get from https://console.cloud.google.com/apis/credentials",
+      "editor": "textfield",
+      "isSecret": true,
+      "nullable": true
+    },
+    "googleSearchApiKey": {
+      "title": "Google Custom Search API Key",
+      "type": "string",
+      "description": "Google Custom Search API key for web search. Get from https://console.cloud.google.com/apis/credentials",
+      "editor": "textfield",
+      "isSecret": true,
+      "nullable": true
+    },
+    "googleSearchEngineId": {
+      "title": "Google Search Engine ID",
+      "type": "string",
+      "description": "Custom Search Engine ID. Get from https://programmablesearchengine.google.com/",
+      "editor": "textfield",
+      "isSecret": true,
+      "nullable": true
     }
   },
   "required": ["keywords", "includePlatforms"]

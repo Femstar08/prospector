@@ -4,9 +4,10 @@ const BasePlatformAdapter = require('./base-adapter');
  * Factory for creating platform-specific adapters
  */
 class AdapterFactory {
-  constructor() {
+  constructor(config = {}) {
     this.adapters = new Map();
     this.supportedPlatforms = ['linkedin', 'x', 'youtube', 'reddit', 'medium', 'web'];
+    this.config = config; // Store API credentials
   }
 
   /**
@@ -50,7 +51,9 @@ class AdapterFactory {
             throw new Error(`No adapter implementation for platform: ${platform}`);
         }
         
-        this.adapters.set(platformLower, new AdapterClass(config));
+        // Merge factory config with adapter-specific config
+        const adapterConfig = { ...this.config, ...config };
+        this.adapters.set(platformLower, new AdapterClass(adapterConfig));
       } catch (error) {
         throw new Error(`Failed to load adapter for ${platform}: ${error.message}`);
       }
