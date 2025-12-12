@@ -99,6 +99,25 @@
       "editor": "textfield",
       "isSecret": true,
       "nullable": true
+    },
+    "questionSeekingMode": {
+      "title": "Question-Seeking Mode",
+      "type": "boolean",
+      "description": "Enable question-seeking mode to find people actively asking questions (recommended for high-intent prospects)",
+      "default": true
+    },
+    "includeComments": {
+      "title": "Include Comments (YouTube)",
+      "type": "boolean",
+      "description": "Extract and analyze YouTube comments for questions (uses more API quota)",
+      "default": true
+    },
+    "targetSubreddits": {
+      "title": "Target Subreddits (Reddit)",
+      "type": "array",
+      "description": "Specific subreddits to search (leave empty for default UK-focused list)",
+      "editor": "stringList",
+      "nullable": true
     }
   },
   "required": ["keywords", "includePlatforms"]

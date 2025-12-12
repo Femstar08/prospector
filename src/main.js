@@ -26,6 +26,9 @@ Actor.main(async () => {
     maxResults = 300,
     minOverallScore = 50,
     onlyNewProfiles = true,
+    questionSeekingMode = true,
+    includeComments = true,
+    targetSubreddits,
     supabaseUrl,
     supabaseKey,
     twitterBearerToken,
@@ -40,7 +43,10 @@ Actor.main(async () => {
     countryFilter,
     maxResults,
     minOverallScore,
-    onlyNewProfiles
+    onlyNewProfiles,
+    questionSeekingMode,
+    includeComments,
+    targetSubreddits: targetSubreddits || 'default'
   });
 
   // Debug: Check if API keys are provided (without logging the actual keys)
@@ -56,7 +62,10 @@ Actor.main(async () => {
     twitterBearerToken,
     youtubeApiKey,
     googleSearchApiKey,
-    googleSearchEngineId
+    googleSearchEngineId,
+    questionSeekingMode,
+    includeComments,
+    targetSubreddits
   });
   const classifier = new Classifier();
   const relationshipClassifier = new RelationshipClassifier();
