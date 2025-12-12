@@ -394,6 +394,20 @@ For best results with minimal issues:
 }
 ```
 
+## Quick Test Configuration
+
+For immediate testing without API keys:
+
+```json
+{
+  "keywords": ["cashflow", "property", "accounting"],
+  "includePlatforms": ["reddit"],
+  "countryFilter": "United Kingdom",
+  "maxResults": 50,
+  "questionSeekingMode": true
+}
+```
+
 This configuration:
 
 - ✅ No API keys required

@@ -92,7 +92,7 @@ class XAdapter extends BasePlatformAdapter {
       const data = await this.retryWithBackoff(async () => {
         // Twitter API v2: Search recent tweets, then extract unique users
         const searchUrl = new URL('https://api.twitter.com/2/tweets/search/recent');
-        searchUrl.searchParams.set('query', `${searchQuery} ? -is:retweet`); // Add ? to find questions
+        searchUrl.searchParams.set('query', `${searchQuery} -is:retweet`); // Remove retweets
         searchUrl.searchParams.set('max_results', Math.min(maxResults * 2, 100));
         searchUrl.searchParams.set('tweet.fields', 'author_id,created_at,public_metrics,text');
         searchUrl.searchParams.set('expansions', 'author_id');
