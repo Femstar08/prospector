@@ -3,18 +3,25 @@ const IntentScorer = require('../scoring/intent-scorer');
 
 /**
  * Reddit platform adapter
- * Uses Reddit's public JSON API (no authentication required)
+ * Uses Reddit's official API with OAuth authentication
  */
 class RedditAdapter extends BasePlatformAdapter {
   constructor(config = {}) {
     super(config);
     this.platformName = 'reddit';
     this.baseUrl = 'https://www.reddit.com';
+    this.oauthUrl = 'https://oauth.reddit.com';
     this.questionSeekingMode = config.questionSeekingMode !== false; // Default true
     this.intentScorer = new IntentScorer();
     
+    // API credentials
+    this.clientId = config.redditClientId;
+    this.clientSecret = config.redditClientSecret;
+    this.accessToken = null;
+    this.tokenExpiry = null;
+    
     // UK-focused subreddits for finance/property questions
-    this.targetSubreddits = config.targetSubreddits || [
+    const defaultSubreddits = [
       'UKPersonalFinance',  // Main target - lots of questions!
       'UKProperty',
       'UKInvesting',
@@ -27,9 +34,63 @@ class RedditAdapter extends BasePlatformAdapter {
       'UKLandlords'
     ];
     
-    // Rate limiting: Reddit allows 60 requests per minute
-    this.requestDelay = 1000; // 1 second between requests
+    // Clean subreddit names (remove r/ prefix if present)
+    this.targetSubreddits = (config.targetSubreddits || defaultSubreddits).map(sub => 
+      sub.startsWith('r/') ? sub.substring(2) : sub
+    );
+    
+    // Rate limiting: Reddit API allows 100 requests per minute with OAuth
+    this.requestDelay = 600; // 0.6 seconds between requests
     this.lastRequestTime = 0;
+  }
+
+  /**
+   * Get OAuth access token
+   */
+  async getAccessToken() {
+    // Check if we have a valid token
+    if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
+      return this.accessToken;
+    }
+
+    if (!this.clientId || !this.clientSecret) {
+      console.log('[Reddit] No API credentials provided, falling back to public API');
+      return null;
+    }
+
+    console.log('[Reddit] Getting OAuth access token...');
+
+    try {
+      const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+      
+      const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'ProspectMatcherUK/1.0.0 (by /u/prospectmatcher)'
+        },
+        body: 'grant_type=client_credentials'
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OAuth failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      this.accessToken = data.access_token;
+      this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 minute early
+      
+      console.log('[Reddit] OAuth token obtained successfully');
+      return this.accessToken;
+      
+    } catch (error) {
+      console.error('[Reddit] OAuth failed:', error.message);
+      console.log('[Reddit] Falling back to public API');
+      return null;
+    }
   }
 
   /**
@@ -44,6 +105,36 @@ class RedditAdapter extends BasePlatformAdapter {
     }
     
     this.lastRequestTime = Date.now();
+  }
+
+  /**
+   * Make authenticated API request
+   */
+  async makeApiRequest(url, useOAuth = true) {
+    await this.rateLimit();
+
+    let headers = {
+      'User-Agent': 'ProspectMatcherUK/1.0.0 (by /u/prospectmatcher)'
+    };
+
+    // Try OAuth first if credentials are available
+    if (useOAuth) {
+      const token = await this.getAccessToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        // Use OAuth endpoint
+        url = url.replace('https://www.reddit.com', this.oauthUrl);
+      }
+    }
+
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Reddit API error: ${response.status} - ${errorText}`);
+    }
+
+    return response.json();
   }
 
   /**
@@ -134,7 +225,25 @@ class RedditAdapter extends BasePlatformAdapter {
       try {
         await this.rateLimit();
         
-        const posts = await this.searchSubreddit(subreddit, searchQuery, 25); // Get 25 per subreddit
+        let posts = [];
+        
+        // Try search API first
+        try {
+          posts = await this.searchSubreddit(subreddit, searchQuery, 25);
+          console.log(`[Reddit] Search API worked for r/${subreddit}: ${posts.length} posts`);
+        } catch (searchError) {
+          console.log(`[Reddit] Search failed for r/${subreddit} (${searchError.message}), trying direct feed...`);
+          // Fallback: get recent posts from subreddit and filter by keywords
+          try {
+            posts = await this.getSubredditPosts(subreddit, 50);
+            posts = this.filterPostsByKeywords(posts, keywords);
+            console.log(`[Reddit] Fallback worked for r/${subreddit}: ${posts.length} posts after filtering`);
+          } catch (fallbackError) {
+            console.log(`[Reddit] Fallback also failed for r/${subreddit}: ${fallbackError.message}`);
+            posts = []; // Continue with empty array
+          }
+        }
+        
         allPosts.push(...posts);
         
         console.log(`[Reddit] r/${subreddit}: found ${posts.length} posts`);
@@ -176,19 +285,59 @@ class RedditAdapter extends BasePlatformAdapter {
   async searchSubreddit(subreddit, query, limit = 25) {
     const url = `${this.baseUrl}/r/${subreddit}/search.json?q=${encodeURIComponent(query)}&restrict_sr=1&sort=new&limit=${limit}`;
     
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'ProspectMatcherUK/1.0'
+    console.log(`[Reddit] Searching r/${subreddit} with OAuth API...`);
+    
+    try {
+      const data = await this.makeApiRequest(url, true);
+      const posts = (data.data?.children || []).map(child => child.data);
+      console.log(`[Reddit] OAuth API worked for r/${subreddit}: ${posts.length} posts`);
+      return posts;
+    } catch (error) {
+      console.log(`[Reddit] OAuth search failed for r/${subreddit} (${error.message}), trying public API...`);
+      
+      // Fallback to public API
+      try {
+        const data = await this.makeApiRequest(url, false);
+        const posts = (data.data?.children || []).map(child => child.data);
+        console.log(`[Reddit] Public API worked for r/${subreddit}: ${posts.length} posts`);
+        return posts;
+      } catch (fallbackError) {
+        console.log(`[Reddit] Public API also failed for r/${subreddit}: ${fallbackError.message}`);
+        throw fallbackError;
       }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Reddit API error: ${response.status}`);
     }
+  }
+
+  /**
+   * Get recent posts from a subreddit (fallback method)
+   * @param {string} subreddit - Subreddit name
+   * @param {number} limit - Max results
+   * @returns {array} - Posts
+   */
+  async getSubredditPosts(subreddit, limit = 50) {
+    const url = `${this.baseUrl}/r/${subreddit}/new.json?limit=${limit}`;
     
-    const data = await response.json();
-    
-    return (data.data?.children || []).map(child => child.data);
+    try {
+      const data = await this.makeApiRequest(url, true);
+      return (data.data?.children || []).map(child => child.data);
+    } catch (error) {
+      console.log(`[Reddit] OAuth failed for r/${subreddit} posts, trying public API...`);
+      const data = await this.makeApiRequest(url, false);
+      return (data.data?.children || []).map(child => child.data);
+    }
+  }
+
+  /**
+   * Filter posts by keywords (fallback method)
+   * @param {array} posts - Posts to filter
+   * @param {string[]} keywords - Keywords to match
+   * @returns {array} - Filtered posts
+   */
+  filterPostsByKeywords(posts, keywords) {
+    return posts.filter(post => {
+      const text = (post.title + ' ' + (post.selftext || '')).toLowerCase();
+      return keywords.some(keyword => text.includes(keyword.toLowerCase()));
+    });
   }
 
   /**
@@ -197,29 +346,28 @@ class RedditAdapter extends BasePlatformAdapter {
    * @returns {object} - User profile
    */
   async getUserProfile(username) {
-    await this.rateLimit();
-    
     const url = `${this.baseUrl}/user/${username}/about.json`;
     
     try {
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'ProspectMatcherUK/1.0'
-        }
-      });
-      
-      if (!response.ok) {
-        return null;
-      }
-      
-      const data = await response.json();
+      const data = await this.makeApiRequest(url, true);
       
       if (data.data) {
         return this.transformUserToProfile(data.data);
       }
       
     } catch (error) {
-      console.error(`[Reddit] Error fetching user ${username}:`, error.message);
+      console.log(`[Reddit] OAuth failed for user ${username}, trying public API...`);
+      
+      try {
+        const data = await this.makeApiRequest(url, false);
+        
+        if (data.data) {
+          return this.transformUserToProfile(data.data);
+        }
+        
+      } catch (fallbackError) {
+        console.error(`[Reddit] Error fetching user ${username}:`, fallbackError.message);
+      }
     }
     
     return null;

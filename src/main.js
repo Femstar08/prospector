@@ -28,13 +28,16 @@ Actor.main(async () => {
     onlyNewProfiles = true,
     questionSeekingMode = true,
     includeComments = true,
+    includeQuora = true,
     targetSubreddits,
     supabaseUrl,
     supabaseKey,
     twitterBearerToken,
     youtubeApiKey,
     googleSearchApiKey,
-    googleSearchEngineId
+    googleSearchEngineId,
+    redditClientId,
+    redditClientSecret
   } = input;
 
   console.log('Input configuration:', {
@@ -46,6 +49,7 @@ Actor.main(async () => {
     onlyNewProfiles,
     questionSeekingMode,
     includeComments,
+    includeQuora,
     targetSubreddits: targetSubreddits || 'default'
   });
 
@@ -54,7 +58,9 @@ Actor.main(async () => {
     twitterBearerToken: twitterBearerToken ? '✓ provided' : '✗ missing',
     youtubeApiKey: youtubeApiKey ? '✓ provided' : '✗ missing',
     googleSearchApiKey: googleSearchApiKey ? '✓ provided' : '✗ missing',
-    googleSearchEngineId: googleSearchEngineId ? '✓ provided' : '✗ missing'
+    googleSearchEngineId: googleSearchEngineId ? '✓ provided' : '✗ missing',
+    redditClientId: redditClientId ? '✓ provided' : '✗ missing',
+    redditClientSecret: redditClientSecret ? '✓ provided' : '✗ missing'
   });
 
   // Initialize components
@@ -63,8 +69,11 @@ Actor.main(async () => {
     youtubeApiKey,
     googleSearchApiKey,
     googleSearchEngineId,
+    redditClientId,
+    redditClientSecret,
     questionSeekingMode,
     includeComments,
+    includeQuora,
     targetSubreddits
   });
   const classifier = new Classifier();
@@ -78,11 +87,22 @@ Actor.main(async () => {
   const runId = Actor.getEnv().actorRunId || 'local-run';
 
   try {
+    // Filter platforms based on feature flags
+    let activePlatforms = [...includePlatforms];
+    
+    // Remove Quora if includeQuora is false
+    if (!includeQuora) {
+      activePlatforms = activePlatforms.filter(platform => platform !== 'quora');
+      if (includePlatforms.includes('quora')) {
+        console.log('Quora disabled by includeQuora flag');
+      }
+    }
+    
     // Step 1: Search across platforms
     console.log('\n=== Step 1: Searching platforms ===');
     const rawProfiles = await orchestratePlatformSearches(
       adapterFactory,
-      includePlatforms,
+      activePlatforms,
       keywords,
       countryFilter,
       maxResults
@@ -154,7 +174,7 @@ function validateInput(input) {
   }
 
   if (input.includePlatforms && input.includePlatforms.length > 0) {
-    const validPlatforms = ['linkedin', 'x', 'youtube', 'reddit', 'medium', 'web'];
+    const validPlatforms = ['linkedin', 'x', 'youtube', 'reddit', 'medium', 'web', 'quora'];
     for (const platform of input.includePlatforms) {
       if (!validPlatforms.includes(platform.toLowerCase())) {
         throw new Error(`Invalid platform: ${platform}. Valid platforms: ${validPlatforms.join(', ')}`);

@@ -6,7 +6,7 @@ const BasePlatformAdapter = require('./base-adapter');
 class AdapterFactory {
   constructor(config = {}) {
     this.adapters = new Map();
-    this.supportedPlatforms = ['linkedin', 'x', 'youtube', 'reddit', 'medium', 'web'];
+    this.supportedPlatforms = ['linkedin', 'x', 'youtube', 'reddit', 'medium', 'web', 'quora'];
     this.config = config; // Store API credentials
   }
 
@@ -46,6 +46,9 @@ class AdapterFactory {
             break;
           case 'web':
             AdapterClass = require('./web-adapter');
+            break;
+          case 'quora':
+            AdapterClass = require('./quora-adapter');
             break;
           default:
             throw new Error(`No adapter implementation for platform: ${platform}`);

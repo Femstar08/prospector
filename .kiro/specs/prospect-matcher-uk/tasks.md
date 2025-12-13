@@ -272,7 +272,7 @@
 
 ## Phase 2: Question-Seeking Enhancement
 
-- [ ] 25. Implement question detection utility
+- [x] 25. Implement question detection utility
 
   - Create src/utils/question-detector.js
   - Implement isQuestion() with regex patterns for question indicators
@@ -293,7 +293,7 @@
   - **Property 20: Urgency detection**
   - **Validates: Requirements 11.2**
 
-- [ ] 26. Implement intent scoring engine
+- [x] 26. Implement intent scoring engine
 
   - Create src/scoring/intent-scorer.js
   - Implement calculateQuestionQualityScore() based on specificity and detail
@@ -312,7 +312,7 @@
   - **Property 22: Decision stage classification**
   - **Validates: Requirements 11.7**
 
-- [ ] 27. Enhance Twitter/X adapter with question search
+- [x] 27. Enhance Twitter/X adapter with question search
 
   - Update src/adapters/x-adapter.js search() method
   - Implement buildQuestionQuery() to construct question-focused search queries
@@ -326,7 +326,7 @@
   - **Property 23: Twitter question query building**
   - **Validates: Requirements 10.1**
 
-- [ ] 28. Enhance Reddit adapter with subreddit targeting
+- [x] 28. Enhance Reddit adapter with subreddit targeting
 
   - Update src/adapters/reddit-adapter.js search() method
   - Add UK-focused subreddit list: r/UKPersonalFinance, r/UKProperty, r/UKInvesting, r/Accounting, r/SmallBusiness, r/Entrepreneur, r/LegalAdviceUK, r/AskUK, r/HousingUK
@@ -347,7 +347,7 @@
   - **Property 25: Reddit question detection**
   - **Validates: Requirements 10.3, 12.4**
 
-- [ ] 29. Implement YouTube comment analysis
+- [x] 29. Implement YouTube comment analysis
 
   - Update src/adapters/youtube-adapter.js with comment extraction
   - Implement findRelevantChannels() to identify UK finance/property channels
@@ -364,7 +364,7 @@
   - **Property 26: YouTube comment question detection**
   - **Validates: Requirements 10.4, 13.3**
 
-- [ ] 30. Implement Quora adapter
+- [x] 30. Implement Quora adapter
 
   - Create src/adapters/quora-adapter.js extending BasePlatformAdapter
   - Implement search() for Quora topics: "Property Investment UK", "UK Personal Finance", "Accounting and Bookkeeping", "Small Business Finance UK"

@@ -1,0 +1,10 @@
+{
+  "keywords": ["property investment", "buy to let", "mortgage advice", "financial planning"],
+  "includePlatforms": ["youtube"],
+  "countryFilter": "United Kingdom",
+  "maxResults": 50,
+  "minOverallScore": 30,
+  "questionSeekingMode": true,
+  "includeComments": true,
+  "onlyNewProfiles": true
+}

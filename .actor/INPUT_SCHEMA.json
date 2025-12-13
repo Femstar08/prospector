@@ -18,7 +18,7 @@
       "editor": "select",
       "items": {
         "type": "string",
-        "enum": ["linkedin", "x", "youtube", "reddit", "medium", "web"]
+        "enum": ["linkedin", "x", "youtube", "reddit", "medium", "web", "quora"]
       },
       "default": ["linkedin", "x", "youtube"],
       "minItems": 1,
@@ -100,6 +100,22 @@
       "isSecret": true,
       "nullable": true
     },
+    "redditClientId": {
+      "title": "Reddit Client ID",
+      "type": "string",
+      "description": "Reddit API Client ID. Get from https://www.reddit.com/prefs/apps",
+      "editor": "textfield",
+      "isSecret": true,
+      "nullable": true
+    },
+    "redditClientSecret": {
+      "title": "Reddit Client Secret",
+      "type": "string",
+      "description": "Reddit API Client Secret. Get from https://www.reddit.com/prefs/apps",
+      "editor": "textfield",
+      "isSecret": true,
+      "nullable": true
+    },
     "questionSeekingMode": {
       "title": "Question-Seeking Mode",
       "type": "boolean",
@@ -115,9 +131,15 @@
     "targetSubreddits": {
       "title": "Target Subreddits (Reddit)",
       "type": "array",
-      "description": "Specific subreddits to search (leave empty for default UK-focused list)",
+      "description": "Specific subreddits to search without r/ prefix (e.g., 'UKPersonalFinance', not 'r/UKPersonalFinance'). Leave empty for default UK-focused list.",
       "editor": "stringList",
       "nullable": true
+    },
+    "includeQuora": {
+      "title": "Include Quora",
+      "type": "boolean",
+      "description": "Enable Quora integration to find people asking UK-specific finance and property questions",
+      "default": true
     }
   },
   "required": ["keywords", "includePlatforms"]

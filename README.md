@@ -23,7 +23,7 @@ An Apify Actor that finds high-intent prospects actively asking questions about 
   - At least one keyword is required
 
 - **includePlatforms** (array): Which platforms to search
-  - Options: `linkedin`, `x`, `youtube`, `reddit`, `medium`, `web`
+  - Options: `linkedin`, `x`, `youtube`, `reddit`, `medium`, `web`, `quora`
   - Default: `["linkedin", "x", "youtube"]`
 
 ### Optional Parameters
@@ -56,6 +56,11 @@ An Apify Actor that finds high-intent prospects actively asking questions about 
 
   - Default: `true`
   - Uses more API quota but finds engaged prospects
+
+- **includeQuora** (boolean): Enable Quora integration to find people asking UK-specific finance and property questions
+
+  - Default: `true`
+  - Uses web scraping (no API required)
 
 - **targetSubreddits** (array): Specific subreddits to search (Reddit only)
 
@@ -216,7 +221,7 @@ Find people actively asking questions about property, finance, and accounting:
 ```json
 {
   "keywords": ["property investment", "rental property", "landlord"],
-  "includePlatforms": ["x", "youtube", "reddit"],
+  "includePlatforms": ["x", "youtube", "reddit", "quora"],
   "countryFilter": "United Kingdom",
   "maxResults": 200,
   "minOverallScore": 60,
@@ -303,6 +308,15 @@ Find people actively asking questions about property, finance, and accounting:
 - Web scraping (no official API)
 - May be rate limited
 - Good for content creators
+
+### Quora
+
+- Web scraping (no API required)
+- Searches UK-focused topics: Property Investment UK, UK Personal Finance, Accounting and Bookkeeping
+- Finds question askers (not answerers)
+- Prioritizes recent questions
+- Rate limited to be respectful (2 seconds between requests)
+- **Typical intent score: 80-95** (highest quality questions)
 
 ### Web
 

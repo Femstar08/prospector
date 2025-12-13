@@ -1,0 +1,9 @@
+{
+  "keywords": ["cashflow", "property", "accounting"],
+  "includePlatforms": ["youtube", "reddit"],
+  "countryFilter": "United Kingdom",
+  "maxResults": 15,
+  "minOverallScore": 40,
+  "questionSeekingMode": true,
+  "includeComments": true
+}
