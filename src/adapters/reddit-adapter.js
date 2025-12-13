@@ -114,7 +114,12 @@ class RedditAdapter extends BasePlatformAdapter {
     await this.rateLimit();
 
     let headers = {
-      'User-Agent': 'ProspectMatcherUK/1.0.0 (by /u/prospectmatcher)'
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/html, */*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'DNT': '1'
     };
 
     // Try OAuth first if credentials are available
@@ -130,8 +135,26 @@ class RedditAdapter extends BasePlatformAdapter {
     const response = await fetch(url, { headers });
     
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Reddit API error: ${response.status} - ${errorText}`);
+      const contentType = response.headers.get('content-type') || '';
+      let errorText = '';
+      
+      // Check if response is HTML (error page) or JSON
+      if (contentType.includes('text/html')) {
+        errorText = `HTML error page (likely 403 Forbidden - Reddit blocking request)`;
+      } else {
+        errorText = await response.text();
+      }
+      
+      throw new Error(`Reddit API error: ${response.status} - ${errorText.substring(0, 200)}`);
+    }
+
+    // Check if response is actually JSON
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      if (text.includes('<html') || text.includes('<!DOCTYPE')) {
+        throw new Error(`Reddit returned HTML instead of JSON (likely 403 Forbidden). Response preview: ${text.substring(0, 200)}`);
+      }
     }
 
     return response.json();
@@ -283,27 +306,45 @@ class RedditAdapter extends BasePlatformAdapter {
    * @returns {array} - Posts
    */
   async searchSubreddit(subreddit, query, limit = 25) {
-    const url = `${this.baseUrl}/r/${subreddit}/search.json?q=${encodeURIComponent(query)}&restrict_sr=1&sort=new&limit=${limit}`;
+    // Try search endpoint first
+    const searchUrl = `${this.baseUrl}/r/${subreddit}/search.json?q=${encodeURIComponent(query)}&restrict_sr=1&sort=new&limit=${limit}`;
     
     console.log(`[Reddit] Searching r/${subreddit} with OAuth API...`);
     
     try {
-      const data = await this.makeApiRequest(url, true);
+      const data = await this.makeApiRequest(searchUrl, true);
       const posts = (data.data?.children || []).map(child => child.data);
       console.log(`[Reddit] OAuth API worked for r/${subreddit}: ${posts.length} posts`);
       return posts;
     } catch (error) {
       console.log(`[Reddit] OAuth search failed for r/${subreddit} (${error.message}), trying public API...`);
       
-      // Fallback to public API
+      // Fallback to public API without OAuth
       try {
-        const data = await this.makeApiRequest(url, false);
+        const data = await this.makeApiRequest(searchUrl, false);
         const posts = (data.data?.children || []).map(child => child.data);
         console.log(`[Reddit] Public API worked for r/${subreddit}: ${posts.length} posts`);
         return posts;
       } catch (fallbackError) {
-        console.log(`[Reddit] Public API also failed for r/${subreddit}: ${fallbackError.message}`);
-        throw fallbackError;
+        // If search fails, try getting recent posts and filtering client-side
+        console.log(`[Reddit] Search API failed, trying recent posts fallback for r/${subreddit}...`);
+        try {
+          const recentUrl = `${this.baseUrl}/r/${subreddit}/new.json?limit=${Math.min(limit * 3, 100)}`;
+          const data = await this.makeApiRequest(recentUrl, false);
+          const allPosts = (data.data?.children || []).map(child => child.data);
+          // Filter posts by keywords client-side
+          const queryLower = query.toLowerCase();
+          const keywords = query.split(' OR ').map(k => k.trim().toLowerCase());
+          const filtered = allPosts.filter(post => {
+            const text = (post.title + ' ' + (post.selftext || '')).toLowerCase();
+            return keywords.some(keyword => text.includes(keyword));
+          });
+          console.log(`[Reddit] Recent posts fallback for r/${subreddit}: ${filtered.length} posts after filtering`);
+          return filtered.slice(0, limit);
+        } catch (recentError) {
+          console.log(`[Reddit] All methods failed for r/${subreddit}: ${recentError.message}`);
+          return []; // Return empty array instead of throwing
+        }
       }
     }
   }
@@ -322,8 +363,13 @@ class RedditAdapter extends BasePlatformAdapter {
       return (data.data?.children || []).map(child => child.data);
     } catch (error) {
       console.log(`[Reddit] OAuth failed for r/${subreddit} posts, trying public API...`);
-      const data = await this.makeApiRequest(url, false);
-      return (data.data?.children || []).map(child => child.data);
+      try {
+        const data = await this.makeApiRequest(url, false);
+        return (data.data?.children || []).map(child => child.data);
+      } catch (fallbackError) {
+        console.log(`[Reddit] Failed to get posts for r/${subreddit}: ${fallbackError.message}`);
+        return []; // Return empty array instead of throwing
+      }
     }
   }
 
