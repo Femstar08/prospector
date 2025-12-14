@@ -202,10 +202,35 @@ class RedditAdapter extends BasePlatformAdapter {
             const userProfile = await this.getUserProfile(post.author);
             
             if (userProfile) {
+              // Calculate post age
+              const postDate = new Date(post.created_utc * 1000);
+              const now = new Date();
+              const ageInDays = Math.floor((now - postDate) / (1000 * 60 * 60 * 24));
+              const ageInHours = Math.floor((now - postDate) / (1000 * 60 * 60));
+              
+              // Format age display
+              let ageDisplay;
+              if (ageInDays > 0) {
+                ageDisplay = `${ageInDays} day${ageInDays > 1 ? 's' : ''} ago`;
+              } else if (ageInHours > 0) {
+                ageDisplay = `${ageInHours} hour${ageInHours > 1 ? 's' : ''} ago`;
+              } else {
+                const ageInMinutes = Math.floor((now - postDate) / (1000 * 60));
+                ageDisplay = `${ageInMinutes} minute${ageInMinutes > 1 ? 's' : ''} ago`;
+              }
+              
+              // Build direct post URL
+              const postUrl = `https://www.reddit.com/r/${post.subreddit}/comments/${post.id}/`;
+              
               // Add question metadata
               userProfile.question_text = post.title + (post.selftext ? '\n\n' + post.selftext : '');
               userProfile.question_source = 'reddit_post';
-              userProfile.question_date = new Date(post.created_utc * 1000).toISOString();
+              userProfile.question_date = postDate.toISOString();
+              userProfile.question_age_days = ageInDays;
+              userProfile.question_age_display = ageDisplay;
+              userProfile.post_url = postUrl;
+              userProfile.post_id = post.id;
+              userProfile.post_title = post.title;
               userProfile.question_quality_score = post.intentAnalysis.question_quality_score;
               userProfile.intent_score = post.intentAnalysis.intent_score;
               userProfile.decision_stage_score = post.intentAnalysis.decision_stage_score;

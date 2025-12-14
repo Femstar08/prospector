@@ -333,10 +333,32 @@ class YouTubeAdapter extends BasePlatformAdapter {
           const channelProfile = await this.getChannelById(question.authorChannelId);
           
           if (channelProfile) {
+            // Calculate comment age
+            const commentDate = new Date(question.publishedAt);
+            const now = new Date();
+            const ageInDays = Math.floor((now - commentDate) / (1000 * 60 * 60 * 24));
+            const ageInHours = Math.floor((now - commentDate) / (1000 * 60 * 60));
+            
+            // Format age display
+            let ageDisplay;
+            if (ageInDays > 0) {
+              ageDisplay = `${ageInDays} day${ageInDays > 1 ? 's' : ''} ago`;
+            } else if (ageInHours > 0) {
+              ageDisplay = `${ageInHours} hour${ageInHours > 1 ? 's' : ''} ago`;
+            } else {
+              const ageInMinutes = Math.floor((now - commentDate) / (1000 * 60));
+              ageDisplay = `${ageInMinutes} minute${ageInMinutes > 1 ? 's' : ''} ago`;
+            }
+            
             // Add question metadata
             channelProfile.question_text = question.text;
             channelProfile.question_source = 'youtube_comment';
             channelProfile.question_date = question.publishedAt;
+            channelProfile.question_age_days = ageInDays;
+            channelProfile.question_age_display = ageDisplay;
+            channelProfile.video_url = question.videoUrl;
+            channelProfile.video_title = question.videoTitle;
+            channelProfile.comment_id = question.id;
             channelProfile.question_quality_score = question.intentAnalysis.question_quality_score;
             channelProfile.intent_score = question.intentAnalysis.intent_score;
             channelProfile.decision_stage_score = question.intentAnalysis.decision_stage_score;
