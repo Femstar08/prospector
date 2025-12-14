@@ -12,7 +12,7 @@ class IntentScorer {
 
   /**
    * Calculate question quality score (0-100)
-   * Based on specificity, detail, and clarity
+   * More selective scoring based on business relevance and specificity
    * @param {string} questionText - The question text
    * @param {object} analysis - Question analysis from QuestionDetector
    * @returns {number} - Score 0-100
@@ -24,32 +24,43 @@ class IntentScorer {
     
     if (!analyzed.isQuestion) return 0;
     
-    let score = 40; // Base score for being a question
+    let score = 20; // Lower base score - questions must earn points
     
-    // Length indicates detail (longer = more specific)
-    if (analyzed.textLength > 200) score += 20;
-    else if (analyzed.textLength > 100) score += 15;
-    else if (analyzed.textLength > 50) score += 10;
+    // Length indicates detail (more selective thresholds)
+    if (analyzed.textLength > 300) score += 25; // Very detailed
+    else if (analyzed.textLength > 150) score += 20; // Good detail
+    else if (analyzed.textLength > 75) score += 15; // Some detail
+    else if (analyzed.textLength < 30) score -= 10; // Too short, likely low quality
     
-    // Question type quality
-    if (analyzed.questionType === 'how-to') score += 15; // Specific actionable question
-    else if (analyzed.questionType === 'recommendation') score += 20; // High intent
-    else if (analyzed.questionType === 'advice') score += 15;
-    else if (analyzed.questionType === 'help') score += 10;
+    // Question type quality (more selective)
+    if (analyzed.questionType === 'recommendation') score += 25; // High intent
+    else if (analyzed.questionType === 'advice') score += 20; // Good intent
+    else if (analyzed.questionType === 'how-to') score += 15; // Actionable
+    else if (analyzed.questionType === 'help') score += 10; // Basic
+    else score += 5; // General questions get minimal points
     
-    // Has question mark (explicit question)
-    if (questionText.includes('?')) score += 10;
+    // Business context indicators (new)
+    const businessTerms = /business|company|startup|revenue|profit|client|customer|service|professional|consultant|advisor|accountant|tax|finance|investment/i;
+    if (businessTerms.test(questionText)) score += 20;
     
-    // Multiple sentences indicate detail
+    // Specificity indicators
+    if (questionText.includes('?')) score += 10; // Explicit question
+    
+    // Multiple sentences indicate thoughtfulness
     const sentences = questionText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    if (sentences.length > 2) score += 15;
+    if (sentences.length > 3) score += 15;
+    else if (sentences.length > 1) score += 10;
     
-    return Math.min(score, 100);
+    // Penalty for very generic questions
+    const genericPhrases = /anyone know|quick question|help please|thanks in advance/i;
+    if (genericPhrases.test(questionText)) score -= 15;
+    
+    return Math.min(Math.max(score, 0), 100);
   }
 
   /**
    * Calculate intent score (0-100)
-   * Based on urgency, budget, timeline, and professional-seeking signals
+   * More selective scoring requiring stronger buying signals
    * @param {string} text - Text to analyze
    * @param {object} analysis - Question analysis from QuestionDetector
    * @returns {number} - Score 0-100
@@ -61,42 +72,68 @@ class IntentScorer {
     
     let score = 0;
     
-    // Urgency indicators (+20)
+    // Professional-seeking language (highest value) (+30)
+    if (analyzed.professionalSeeking.seekingProfessional) {
+      score += 30;
+      
+      // Bonus for specific professional types
+      if (/accountant|financial advisor|consultant|tax advisor|bookkeeper/i.test(text)) {
+        score += 15;
+      }
+    }
+    
+    // Budget mentioned (strong buying signal) (+25)
+    if (analyzed.budget.hasBudget) {
+      score += 25;
+      
+      // Bonus for specific budget amounts
+      if (/£\d+|\$\d+/.test(text)) {
+        score += 10;
+      }
+    }
+    
+    // Timeline mentioned (urgency) (+20)
+    if (analyzed.timeline.hasTimeline) {
+      score += 20;
+      
+      // Bonus for immediate timelines
+      if (/this month|next month|asap|urgent|immediately/i.test(text)) {
+        score += 10;
+      }
+    }
+    
+    // Urgency indicators (+15)
     if (analyzed.urgency.hasUrgency) {
+      score += 15;
+    }
+    
+    // Business problem context (new) (+20)
+    const businessProblems = /cash flow|tax return|vat|corporation tax|business structure|limited company|sole trader|partnership|accounting software|bookkeeping|financial planning/i;
+    if (businessProblems.test(text)) {
       score += 20;
     }
     
-    // Budget mentioned (+15)
-    if (analyzed.budget.hasBudget) {
-      score += 15;
+    // Detailed problem description (+10)
+    if (analyzed.textLength > 150 && analyzed.isQuestion) {
+      score += 10;
     }
     
-    // Timeline mentioned (+15)
-    if (analyzed.timeline.hasTimeline) {
-      score += 15;
-    }
-    
-    // Professional-seeking language (+25)
-    if (analyzed.professionalSeeking.seekingProfessional) {
-      score += 25;
-    }
-    
-    // Specific problem (long detailed text) (+15)
-    if (analyzed.textLength > 100 && analyzed.isQuestion) {
-      score += 15;
-    }
-    
-    // Multiple intent signals (bonus)
-    const signalCount = [
-      analyzed.urgency.hasUrgency,
+    // Multiple strong intent signals (bonus)
+    const strongSignals = [
+      analyzed.professionalSeeking.seekingProfessional,
       analyzed.budget.hasBudget,
       analyzed.timeline.hasTimeline,
-      analyzed.professionalSeeking.seekingProfessional
+      businessProblems.test(text)
     ].filter(Boolean).length;
     
-    if (signalCount >= 3) score += 10; // Strong intent
+    if (strongSignals >= 3) score += 15; // Very strong intent
+    else if (strongSignals >= 2) score += 10; // Good intent
     
-    return Math.min(score, 100);
+    // Penalty for vague questions
+    const vagueIndicators = /just wondering|curious|general question|anyone else/i;
+    if (vagueIndicators.test(text)) score -= 20;
+    
+    return Math.min(Math.max(score, 0), 100);
   }
 
   /**

@@ -97,19 +97,20 @@ class Scorer {
   /**
    * Calculate overall score using weighted formula (0-100)
    * 
-   * Updated weights with question-seeking metrics:
-   * - business_alignment: 20% (was 25%)
-   * - technical_synergy: 15% (was 20%)
-   * - audience: 10% (was 15%)
-   * - wealth_potential: 10% (was 15%)
-   * - openness: 20% (was 25%)
-   * - question_quality: 10% (new)
-   * - intent: 15% (new)
-   * - decision_stage: 10% (new)
+   * Optimized weights for higher quality targeting:
+   * - business_alignment: 25% (increased - must be relevant)
+   * - wealth_potential: 20% (increased - must have money)
+   * - intent: 20% (increased - must show buying intent)
+   * - openness: 15% (maintained - important for engagement)
+   * - technical_synergy: 10% (reduced - nice to have)
+   * - question_quality: 5% (reduced - quality over quantity)
+   * - decision_stage: 3% (reduced - intent covers this)
+   * - audience: 2% (reduced - least important)
    * 
-   * Boosts:
-   * - High intent (intent_score > 80): +10 points
-   * - Actively seeking professional (decision_stage_score = 100): +15 points
+   * Boosts (more selective):
+   * - Very high intent (intent_score >= 85): +15 points
+   * - Actively seeking professional (decision_stage_score = 100): +20 points
+   * - High wealth + high intent combo: +10 points
    */
   calculateOverallScore(subScores) {
     const {
@@ -123,26 +124,32 @@ class Scorer {
       decision_stage_score = 0
     } = subScores;
     
-    // Base score with updated weights
+    // Base score with optimized weights for quality
     let score = 
-      (business_alignment_score * 0.20) +
-      (technical_synergy_score * 0.15) +
-      (audience_score * 0.10) +
-      (wealth_potential_score * 0.10) +
-      (openness_score * 0.20) +
-      (question_quality_score * 0.10) +
-      (intent_score * 0.15) +
-      (decision_stage_score * 0.10);
+      (business_alignment_score * 0.25) +
+      (wealth_potential_score * 0.20) +
+      (intent_score * 0.20) +
+      (openness_score * 0.15) +
+      (technical_synergy_score * 0.10) +
+      (question_quality_score * 0.05) +
+      (decision_stage_score * 0.03) +
+      (audience_score * 0.02);
     
-    // Apply boosts for high-intent prospects
-    if (intent_score > 80) {
-      score += 10;
-      console.log(`[Scorer] High intent boost applied (+10)`);
+    // Apply selective boosts for premium prospects
+    if (intent_score >= 85) {
+      score += 15;
+      console.log(`[Scorer] Very high intent boost applied (+15)`);
     }
     
     if (decision_stage_score === 100) {
-      score += 15;
-      console.log(`[Scorer] Actively seeking professional boost applied (+15)`);
+      score += 20;
+      console.log(`[Scorer] Actively seeking professional boost applied (+20)`);
+    }
+    
+    // Combo boost: high wealth + high intent
+    if (wealth_potential_score >= 70 && intent_score >= 70) {
+      score += 10;
+      console.log(`[Scorer] High wealth + intent combo boost applied (+10)`);
     }
     
     return Math.min(Math.max(Math.round(score), 0), 100);

@@ -24,7 +24,7 @@ Actor.main(async () => {
     includePlatforms = ['linkedin', 'x', 'youtube'],
     countryFilter = 'United Kingdom',
     maxResults = 300,
-    minOverallScore = 50,
+    minOverallScore = 65,
     onlyNewProfiles = true,
     questionSeekingMode = true,
     includeComments = true,
@@ -143,7 +143,13 @@ Actor.main(async () => {
     console.log('\n=== Step 3: Filtering and deduplicating ===');
     const filteredProfiles = filter.applyFilters(enrichedProfiles, {
       minOverallScore,
-      maxResults
+      maxResults,
+      countryFilter,                // Filter by content country
+      minIntentScore: 60,           // Higher intent threshold for question askers
+      minQuestionQuality: 50,       // Minimum question quality score
+      minWealthScore: 40,           // Minimum wealth potential for investors
+      allowLowScoreInvestors: true, // Keep investors even with lower scores
+      removeVeryLowEngagement: true // Remove profiles with very low engagement
     });
 
     console.log(`After filtering: ${filteredProfiles.length} profiles`);
